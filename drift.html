@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+<meta charset="utf-8">
+<style>
+    body {
+        text-align: center;
+    }
+
+    canvas {
+        border: 1px black solid;
+    }
+</style>
+<body>
+
+<canvas id="myCanvas" width="600" height="400"></canvas>
+<br>
+<script src="math_5.0.1.min.js"></script>
+<script src="filterbank_48000_8192_36.js"></script>
+<script src="colormap.js"></script>
+<script>
+    function float2colorBW(percentage) {
+        let color_part_dec = 255 * percentage;
+        let color_part_hex = Number(parseInt(color_part_dec, 10)).toString(16);
+        return "#" + color_part_hex + color_part_hex + color_part_hex;
+    }
+
+    function float2color(percentage) {
+        let color_dec = parseInt(255 * percentage);
+        return colors_magma[color_dec]
+    }
+
+    function argMax(array) {
+        return array.indexOf(Math.max(...array));
+    }
+
+    // Bugfix, see http://javascript.about.com/od/problemsolving/a/modulobug.htm
+    function mod(n, m) {
+        return ((n % m) + m) % m;
+    }
+
+    navigator.getUserMedia =
+        navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia;
+
+    function start() {
+        const button = document.getElementById("start");
+        button.disabled = true;
+        if (navigator.getUserMedia) {
+            let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 8192;
+            analyser.smoothingTimeConstant = 0;
+
+            let dataArray = new Float32Array(analyser.frequencyBinCount);
+            const tens = Array(dataArray.length).fill(10);
+
+            let canvasElement = document.getElementById("myCanvas");
+            let canvasCtx = canvasElement.getContext("2d");
+
+            const DRIFT_BUFFER_LENGTH = 100;
+            let driftBuffer = Array(DRIFT_BUFFER_LENGTH).fill(0.5);
+
+            navigator.getUserMedia({
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                    }
+                }, function (stream) {
+                    const audioSource = audioCtx.createMediaStreamSource(stream);
+                    audioSource.connect(analyser);
+                    loop();
+
+                    function loop() {
+
+                        const HEIGHT = canvasElement.height;
+                        const WIDTH = canvasElement.width;
+                        const N_CHROMA = 12;
+                        const BAR_HEIGHT = HEIGHT / N_CHROMA;
+
+                        analyser.getFloatFrequencyData(dataArray);
+                        // turn data into regular array
+                        let data = Array.prototype.slice.call(dataArray);
+                        // Convert dB to linear
+                        data = math.dotPow(tens, math.divide(data, 20));
+
+                        // FFT -> chroma
+                        let chroma = math.multiply(fb, data);
+                        // Reorder to have 'C' at index 0
+                        const SHIFT_VALUE = 5;
+                        chroma = chroma.slice(SHIFT_VALUE).concat(chroma.slice(0, SHIFT_VALUE));
+                        // normalize to length 1
+                        const chromaNormalized = math.dotDivide(chroma, math.norm(chroma));
+
+                        const SPEED = 1;
+                        canvasCtx.drawImage(canvasElement, -SPEED, 0);
+
+                        const reshapedChroma = math.reshape(chromaNormalized, [12, 3]);
+                        const energy = reshapedChroma.slice().reduce((a, b) => a.map((x, i) => x + b[i]));
+
+                        const bIndex = argMax(energy);
+                        const aIndex = mod(bIndex - 1, 3);
+                        const cIndex = mod(bIndex + 1, 3);
+
+                        const b = energy[bIndex];
+                        const a = energy[aIndex];
+                        const c = energy[cIndex];
+
+                        let p;
+                        if (a == 0 && b == 0 && c == 0) {
+                            p = 0;
+                        } else {
+                            p = 0.5 * (a - c) / (a - (2 * b) + c);
+                        }
+
+                        let hpcp = [];
+                        reshapedChroma.forEach(function (curPitch, i) {
+                            hpcp.push(curPitch[bIndex] - (0.25 * (curPitch[aIndex] - curPitch[cIndex]) * p));
+                        });
+                        // let hpcp = math.log(math.add(hpcp, 1));
+                        let hpcpNormalized = math.divide(hpcp, math.norm(hpcp));
+
+                        canvasCtx.drawImage(canvasElement, SPEED - 1, 0);
+                        hpcpNormalized.forEach(function (value, i) {
+                            canvasCtx.fillStyle = float2color(value);
+                            let curHeight = HEIGHT - ((i + 1) * BAR_HEIGHT);
+                            canvasCtx.fillRect(WIDTH - SPEED, curHeight, SPEED, BAR_HEIGHT);
+                        });
+
+                        driftBuffer.shift(1);
+                        const drift = (bIndex + 1) * 0.25 + (p / 2);
+                        // console.log(drift);
+                        driftBuffer.push(drift);
+
+                        canvasCtx.fillStyle = "#00FF002F";
+                        canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT / 2 - 1, SPEED + 1, 3);
+
+                        canvasCtx.fillStyle = "#00FF00";
+                        canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (math.median(driftBuffer) * HEIGHT) - 1, SPEED + 1, 3);
+                        canvasCtx.fillStyle = "#00FFFF";
+                        canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (drift * HEIGHT) - 1, SPEED + 1, 3);
+                        canvasCtx.fillStyle = "#FFFF00";
+                        canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (math.mean(driftBuffer) * HEIGHT) - 1, SPEED + 1, 3);
+
+                        // TEST: 1709.99 Hz
+
+                        requestAnimationFrame(loop);
+
+                    }
+
+                },
+                function (err) {
+                    console.log('Error initializing user media stream: ' + err);
+                }
+            );
+        }
+    }
+</script>
+<button id="start" onclick="start()">Start</button>
+
+</body>
+
+</html>
