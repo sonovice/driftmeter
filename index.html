@@ -74,6 +74,7 @@
                     loop();
 
                     function loop() {
+                        requestAnimationFrame(loop);
 
                         const HEIGHT = canvasElement.height;
                         const WIDTH = canvasElement.width;
@@ -132,7 +133,7 @@
                         driftBuffer.shift(1);
                         const drift = (bIndex + 1) * 0.25 + (p / 2);
                         // console.log(drift);
-                        driftBuffer.push(index);
+                        driftBuffer.push(drift);
 
                         canvasCtx.fillStyle = "#00FF002F";
                         canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT / 2 - 1, SPEED + 1, 3);
@@ -140,13 +141,12 @@
                         canvasCtx.fillStyle = "#00FF00";
                         canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (math.median(driftBuffer) * HEIGHT) - 1, SPEED + 1, 3);
                         canvasCtx.fillStyle = "#00FFFF";
-                        canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (index * HEIGHT) - 1, SPEED + 1, 3);
+                        canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (drift * HEIGHT) - 1, SPEED + 1, 3);
                         canvasCtx.fillStyle = "#FFFF00";
                         canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (math.mean(driftBuffer) * HEIGHT) - 1, SPEED + 1, 3);
 
                         // TEST: 1709.99 Hz
 
-                        requestAnimationFrame(loop);
 
                     }
 
