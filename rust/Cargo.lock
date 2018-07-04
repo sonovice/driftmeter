@@ -18,7 +18,7 @@ version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "drift-meter"
+name = "drift_meter"
 version = "0.1.0"
 dependencies = [
  "chfft 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -1,5 +1,5 @@
 [package]
-name = "drift-meter"
+name = "drift_meter"
 version = "0.1.0"
 authors = ["Simon Waloschek <simon.waloschek@posteo.de>"]
 
