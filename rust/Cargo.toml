@@ -1,0 +1,12 @@
+[package]
+name = "drift-meter"
+version = "0.1.0"
+authors = ["Simon Waloschek <simon.waloschek@posteo.de>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+stdweb = "0.4.7"
+chfft = "0.2.4"
+ndarray = "0.11.2"
