@@ -123,7 +123,7 @@
                         // let hpcp = math.log(math.add(hpcp, 1));
                         let hpcpNormalized = math.divide(hpcp, math.norm(hpcp));
 
-                        canvasCtx.drawImage(canvasElement, SPEED - 1, 0);
+                        canvasCtx.drawImage(canvasElement, -SPEED, 0);
                         hpcpNormalized.forEach(function (value, i) {
                             canvasCtx.fillStyle = float2color(value);
                             let curHeight = HEIGHT - ((i + 1) * BAR_HEIGHT);
