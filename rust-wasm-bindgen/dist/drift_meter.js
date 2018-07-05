@@ -205,9 +205,9 @@ __exports.__wbindgen_throw = function(ptr, len) {
     throw new Error(getStringFromWasm(ptr, len));
 };
 
-__exports.__wbindgen_cosf = function(x) { return Math.cos(x); };
-
 __exports.__wbindgen_sinf = function(x) { return Math.sin(x); };
+
+__exports.__wbindgen_cosf = function(x) { return Math.cos(x); };
 
                     function init(wasm_path) {
                         return fetch(wasm_path)
