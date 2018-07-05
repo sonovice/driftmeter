@@ -14,7 +14,7 @@
 <script src="drift_meter.js"></script>
 <script src="colormap.js"></script>
 <script>
-    const {process_audio} = wasm_bindgen;
+    const {Context} = wasm_bindgen;
 
     let drift_meter;
     wasm_bindgen('./drift_meter_bg.wasm').then(function (d) {
@@ -43,9 +43,10 @@
         }).then(function (stream) {
             let audioSource = audioCtx.createMediaStreamSource(stream);
             let scriptNode = audioCtx.createScriptProcessor(2048, 1, 1);
+            let foo = new Context();
             scriptNode.onaudioprocess = function (audioProcessingEvent) {
                 const inputBuffer = audioProcessingEvent.inputBuffer;
-                const chroma = process_audio(inputBuffer.getChannelData(0));
+                const chroma = foo.process_audio(inputBuffer.getChannelData(0));
                 const barHeight = HEIGHT / chroma.length;
 
                 canvasCtx.drawImage(canvasElement, -SPEED, 0);

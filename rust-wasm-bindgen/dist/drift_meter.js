@@ -45,17 +45,37 @@ function getUint32Memory() {
     return cachegetUint32Memory;
 }
 
-__exports.process_audio = function(arg0) {
+class Context {
+
+                static __construct(ptr) {
+                    return new Context(ptr);
+                }
+
+                constructor(ptr) {
+                    this.ptr = ptr;
+                }
+
+            free() {
+                const ptr = this.ptr;
+                this.ptr = 0;
+                wasm.__wbg_context_free(ptr);
+            }
+        static new() {
+    return Context.__construct(wasm.context_new());
+}
+process_audio(arg0) {
     const [ptr0, len0] = passArrayF32ToWasm(arg0);
     const retptr = globalArgumentPtr();
-    wasm.process_audio(retptr, ptr0, len0);
+    wasm.context_process_audio(retptr, this.ptr, ptr0, len0);
     const mem = getUint32Memory();
     const ptr = mem[retptr / 4];
     const len = mem[retptr / 4 + 1];
     const realRet = getArrayF32FromWasm(ptr, len).slice();
     wasm.__wbindgen_free(ptr, len * 4);
     return realRet;
-};
+}
+}
+__exports.Context = Context;
 
 let cachedDecoder = new TextDecoder('utf-8');
 
