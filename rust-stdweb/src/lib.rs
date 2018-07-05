@@ -43,12 +43,11 @@ fn process_audio(buf: TypedArray<f32>) -> Vec<f32> {
     let reshaped_chroma = Array::from_shape_vec((12, 3), chroma.to_vec()).unwrap();
     let energy = reshaped_chroma.sum_axis(Axis(0)).to_vec();
 
-    let b_index = argmax(&energy).0;
+    let (b_index, b) = argmax(&energy);
+    // REMEMBER: '%' is the remainder operator, NOT modulo!
     let a_index = (b_index + 3 - 1) % 3;
     let c_index = (b_index + 3 + 1) % 3;
 
-
-    let b = energy[b_index];
     let a = energy[a_index];
     let c = energy[c_index];
 
@@ -66,7 +65,7 @@ fn process_audio(buf: TypedArray<f32>) -> Vec<f32> {
 pub fn argmax<T>(u: &[T]) -> (usize, T)
     where T: Copy + PartialOrd
 {
-    assert!(u.len() != 0);
+    assert_ne!(u.len(), 0);
 
     let mut max_index = 0;
     let mut max = u[max_index];

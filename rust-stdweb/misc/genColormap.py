@@ -264,7 +264,7 @@ for e in colors_magma:
         string += format(int(c * 255), '02x')
     new.append(string)
 
-with open('colormap.js', 'w') as f:
+with open('../static/colormap.js', 'w') as f:
     f.write('colors_magma = ' + str(new)+ ';\n\n')
     f.write("""function float2color(percentage) {
     let color_dec = parseInt(255 * percentage);
