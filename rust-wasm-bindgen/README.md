@@ -1,7 +1,6 @@
 Install
 ```
 cargo +nightly install wasm-bindgen-cli
-cargo install wasm-gc
 ```
 
 To build the example, use
