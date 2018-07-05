@@ -15,7 +15,7 @@
 <canvas id="myCanvas" width="600" height="400"></canvas>
 <br>
 <script src="math_5.0.1.min.js"></script>
-<script src="filterbank_48000_8192_36.js"></script>
+<script src="filterbank_48000_2048_36.js"></script>
 <script src="colormap.js"></script>
 <script>
     function float2colorBW(percentage) {
@@ -50,7 +50,7 @@
         if (navigator.getUserMedia) {
             let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             let analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 8192;
+            analyser.fftSize = 2048;
             analyser.smoothingTimeConstant = 0;
 
             let dataArray = new Float32Array(analyser.frequencyBinCount);
@@ -95,7 +95,7 @@
                         // normalize to length 1
                         const chromaNormalized = math.dotDivide(chroma, math.norm(chroma));
 
-                        const SPEED = 1;
+                        const SPEED = 2;
                         canvasCtx.drawImage(canvasElement, -SPEED, 0);
 
                         const reshapedChroma = math.reshape(chromaNormalized, [12, 3]);
