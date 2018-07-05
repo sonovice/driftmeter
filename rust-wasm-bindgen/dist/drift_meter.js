@@ -26,25 +26,6 @@ function passArrayF32ToWasm(arg) {
     return [ptr, arg.length];
 }
 
-function getArrayF32FromWasm(ptr, len) {
-    return getFloat32Memory().subarray(ptr / 4, ptr / 4 + len);
-}
-
-let cachedGlobalArgumentPtr = null;
-function globalArgumentPtr() {
-    if (cachedGlobalArgumentPtr === null)
-        cachedGlobalArgumentPtr = wasm.__wbindgen_global_argument_ptr();
-    return cachedGlobalArgumentPtr;
-}
-
-let cachegetUint32Memory = null;
-function getUint32Memory() {
-    if (cachegetUint32Memory === null ||
-        cachegetUint32Memory.buffer !== wasm.memory.buffer)
-        cachegetUint32Memory = new Uint32Array(wasm.memory.buffer);
-    return cachegetUint32Memory;
-}
-
 class Context {
 
                 static __construct(ptr) {
@@ -65,14 +46,17 @@ class Context {
 }
 process_audio(arg0) {
     const [ptr0, len0] = passArrayF32ToWasm(arg0);
-    const retptr = globalArgumentPtr();
-    wasm.context_process_audio(retptr, this.ptr, ptr0, len0);
-    const mem = getUint32Memory();
-    const ptr = mem[retptr / 4];
-    const len = mem[retptr / 4 + 1];
-    const realRet = getArrayF32FromWasm(ptr, len).slice();
-    wasm.__wbindgen_free(ptr, len * 4);
-    return realRet;
+    try {
+        return wasm.context_process_audio(this.ptr, ptr0, len0);
+    } finally {
+        wasm.__wbindgen_free(ptr0, len0 * 4);
+    }
+}
+result_ptr() {
+    return wasm.context_result_ptr(this.ptr);
+}
+result_len() {
+    return wasm.context_result_len(this.ptr);
 }
 }
 __exports.Context = Context;

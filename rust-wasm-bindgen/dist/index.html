@@ -16,9 +16,9 @@
 <script>
     const {Context} = wasm_bindgen;
 
-    let drift_meter;
-    wasm_bindgen('./drift_meter_bg.wasm').then(function (d) {
-        drift_meter = d;
+    let cx = null;
+    wasm_bindgen('./drift_meter_bg.wasm').then(function () {
+        cx = Context.new()
     });
 
     function start() {
@@ -43,10 +43,15 @@
         }).then(function (stream) {
             let audioSource = audioCtx.createMediaStreamSource(stream);
             let scriptNode = audioCtx.createScriptProcessor(2048, 1, 1);
-            let foo = new Context();
             scriptNode.onaudioprocess = function (audioProcessingEvent) {
                 const inputBuffer = audioProcessingEvent.inputBuffer;
-                const chroma = foo.process_audio(inputBuffer.getChannelData(0));
+
+                cx.process_audio(inputBuffer.getChannelData(0));
+                const ptr = cx.result_ptr();
+                const len = cx.result_len();
+                const chroma = new Float32Array(wasm_bindgen.wasm.memory.buffer)
+                    .subarray(ptr / 4, ptr / 4 + len);
+
                 const barHeight = HEIGHT / chroma.length;
 
                 canvasCtx.drawImage(canvasElement, -SPEED, 0);

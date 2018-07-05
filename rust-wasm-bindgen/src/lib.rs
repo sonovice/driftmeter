@@ -14,20 +14,22 @@ mod filterbank;
 
 #[wasm_bindgen]
 pub struct Context {
-    filter: Array2<f32>,
     fft: RFft1D<f32>,
+    filter: Array2<f32>,
+    result: [f32; 12],
 }
 
 #[wasm_bindgen]
 impl Context {
     pub fn new() -> Context {
         Context {
-            filter: Array::from_shape_vec((36, 1025), filterbank::FILTER_MATRIX.to_vec()).unwrap(),
             fft: RFft1D::<f32>::new(2048),
+            filter: Array::from_shape_vec((36, 1025), filterbank::FILTER_MATRIX.to_vec()).unwrap(),
+            result: [0.0; 12],
         }
     }
 
-    pub fn process_audio(&mut self, buf: Vec<f32>) -> Vec<f32> {
+    pub fn process_audio(&mut self, buf: &[f32]) {
         // Do FFT
         let bins = self.fft.forward(&buf);
 
@@ -59,12 +61,17 @@ impl Context {
 
         let p = 0.5 * (a - c) / (a - (2. * b) + c);
 
-        let mut hpcp: Vec<f32> = Vec::with_capacity(12);
         for i in 0..12 {
-            hpcp.push(reshaped_chroma[[i, b_index]] - (0.25 * (reshaped_chroma[[i, a_index]] - reshaped_chroma[[i, c_index]]) * p));
+            self.result[i] = reshaped_chroma[[i, b_index]] - (0.25 * (reshaped_chroma[[i, a_index]] - reshaped_chroma[[i, c_index]]) * p);
         }
+    }
 
-        hpcp
+    pub fn result_ptr(&self) -> *const f32 {
+        self.result.as_ptr()
+    }
+
+    pub fn result_len(&self) -> usize {
+        self.result.len()
     }
 }
 
