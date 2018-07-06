@@ -1,7 +1,7 @@
 /* tslint:disable */
-export class Context {
+export class DriftMeter {
 free(): void;
-static  new(arg0: number): Context;
+static  new(arg0: number): DriftMeter;
 
  process_audio(arg0: Float32Array): void;
 

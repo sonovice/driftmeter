@@ -14,12 +14,12 @@
 <script src="drift_meter.js"></script>
 <script src="colormap.js"></script>
 <script>
-    const {Context} = wasm_bindgen;
+    const {DriftMeter} = wasm_bindgen;
     const OFFSET_QUEUE_LENGTH = 100;
 
-    let cx = null;
+    let driftMeter = null;
     wasm_bindgen('./drift_meter_bg.wasm').then(function () {
-        cx = Context.new(OFFSET_QUEUE_LENGTH);
+        driftMeter = DriftMeter.new(OFFSET_QUEUE_LENGTH);
     });
 
     function start() {
@@ -43,12 +43,12 @@
             }
         }).then(function (stream) {
             let audioSource = audioCtx.createMediaStreamSource(stream);
-            let scriptNode = audioCtx.createScriptProcessor(cx.fft_window(), 1, 1);
+            let scriptNode = audioCtx.createScriptProcessor(driftMeter.fft_window(), 1, 1);
             scriptNode.onaudioprocess = function (audioProcessingEvent) {
                 const inputBuffer = audioProcessingEvent.inputBuffer;
 
-                cx.process_audio(inputBuffer.getChannelData(0));
-                const ptr = cx.hpcp_ptr() / Float32Array.BYTES_PER_ELEMENT;
+                driftMeter.process_audio(inputBuffer.getChannelData(0));
+                const ptr = driftMeter.hpcp_ptr() / Float32Array.BYTES_PER_ELEMENT;
                 const hpcp = new Float32Array(wasm_bindgen.wasm.memory.buffer)
                     .subarray(ptr, ptr + 12);
 
@@ -65,9 +65,9 @@
                 canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT / 2 - 1, SPEED + 1, 3);
 
                 canvasCtx.fillStyle = "#00FFFF";
-                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (cx.offset() * HEIGHT) - 1, SPEED + 1, 3);
+                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (driftMeter.offset() * HEIGHT) - 1, SPEED + 1, 3);
                 canvasCtx.fillStyle = "#FFFF00";
-                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (cx.offset_mean() * HEIGHT) - 1, SPEED + 1, 3);
+                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (driftMeter.offset_mean() * HEIGHT) - 1, SPEED + 1, 3);
 
 
             };

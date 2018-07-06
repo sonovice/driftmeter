@@ -13,7 +13,7 @@ use wasm_bindgen::prelude::*;
 mod filterbank;
 
 #[wasm_bindgen]
-pub struct Context {
+pub struct DriftMeter {
     fft: RFft1D<f32>,
     filterbank: Array2<f32>,
     hpcp: [f32; 12],
@@ -21,10 +21,10 @@ pub struct Context {
 }
 
 #[wasm_bindgen]
-impl Context {
-    pub fn new(offset_buffer_size: usize) -> Context {
+impl DriftMeter {
+    pub fn new(offset_buffer_size: usize) -> DriftMeter {
         let filterbank_length = filterbank::FILTER_MATRIX.len();
-        Context {
+        DriftMeter {
             fft: RFft1D::<f32>::new((filterbank_length / 36 - 1) * 2),
             filterbank: Array::from_shape_vec((36, filterbank_length / 36), filterbank::FILTER_MATRIX.to_vec()).unwrap(),
             hpcp: [0.0; 12],

@@ -26,10 +26,10 @@ function passArrayF32ToWasm(arg) {
     return [ptr, arg.length];
 }
 
-class Context {
+class DriftMeter {
 
                 static __construct(ptr) {
-                    return new Context(ptr);
+                    return new DriftMeter(ptr);
                 }
 
                 constructor(ptr) {
@@ -39,36 +39,36 @@ class Context {
             free() {
                 const ptr = this.ptr;
                 this.ptr = 0;
-                wasm.__wbg_context_free(ptr);
+                wasm.__wbg_driftmeter_free(ptr);
             }
         static new(arg0) {
-    return Context.__construct(wasm.context_new(arg0));
+    return DriftMeter.__construct(wasm.driftmeter_new(arg0));
 }
 process_audio(arg0) {
     const [ptr0, len0] = passArrayF32ToWasm(arg0);
     try {
-        return wasm.context_process_audio(this.ptr, ptr0, len0);
+        return wasm.driftmeter_process_audio(this.ptr, ptr0, len0);
     } finally {
         wasm.__wbindgen_free(ptr0, len0 * 4);
     }
 }
 hpcp_ptr() {
-    return wasm.context_hpcp_ptr(this.ptr);
+    return wasm.driftmeter_hpcp_ptr(this.ptr);
 }
 fft_window() {
-    return wasm.context_fft_window(this.ptr);
+    return wasm.driftmeter_fft_window(this.ptr);
 }
 offset() {
-    return wasm.context_offset(this.ptr);
+    return wasm.driftmeter_offset(this.ptr);
 }
 reset_offset() {
-    return wasm.context_reset_offset(this.ptr);
+    return wasm.driftmeter_reset_offset(this.ptr);
 }
 offset_mean() {
-    return wasm.context_offset_mean(this.ptr);
+    return wasm.driftmeter_offset_mean(this.ptr);
 }
 }
-__exports.Context = Context;
+__exports.DriftMeter = DriftMeter;
 
 let cachedDecoder = new TextDecoder('utf-8');
 
