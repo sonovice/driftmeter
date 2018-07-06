@@ -68,7 +68,7 @@ impl DriftMeter {
 
         let offset = (b_index as f32 + 1.0) * 0.25 + (p / 2.0);
 
-        if self.offset_buffer.len() == 12 {
+        if self.offset_buffer.len() == self.offset_buffer.capacity() {
             self.offset_buffer.pop_front();
         }
         self.offset_buffer.push_back(offset);

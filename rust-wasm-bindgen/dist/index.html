@@ -15,7 +15,7 @@
 <script src="colormap.js"></script>
 <script>
     const {DriftMeter} = wasm_bindgen;
-    const OFFSET_QUEUE_LENGTH = 100;
+    const OFFSET_QUEUE_LENGTH = 25;
 
     let driftMeter = null;
     wasm_bindgen('./drift_meter_bg.wasm').then(function () {
