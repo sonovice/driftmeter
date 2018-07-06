@@ -15,10 +15,11 @@
 <script src="colormap.js"></script>
 <script>
     const {Context} = wasm_bindgen;
+    const OFFSET_QUEUE_LENGTH = 100;
 
     let cx = null;
     wasm_bindgen('./drift_meter_bg.wasm').then(function () {
-        cx = Context.new()
+        cx = Context.new(OFFSET_QUEUE_LENGTH);
     });
 
     function start() {
@@ -42,24 +43,31 @@
             }
         }).then(function (stream) {
             let audioSource = audioCtx.createMediaStreamSource(stream);
-            let scriptNode = audioCtx.createScriptProcessor(2048, 1, 1);
+            let scriptNode = audioCtx.createScriptProcessor(cx.fft_window(), 1, 1);
             scriptNode.onaudioprocess = function (audioProcessingEvent) {
                 const inputBuffer = audioProcessingEvent.inputBuffer;
 
                 cx.process_audio(inputBuffer.getChannelData(0));
-                const ptr = cx.result_ptr();
-                const len = cx.result_len();
-                const chroma = new Float32Array(wasm_bindgen.wasm.memory.buffer)
-                    .subarray(ptr / 4, ptr / 4 + len);
+                const ptr = cx.hpcp_ptr() / Float32Array.BYTES_PER_ELEMENT;
+                const hpcp = new Float32Array(wasm_bindgen.wasm.memory.buffer)
+                    .subarray(ptr, ptr + 12);
 
-                const barHeight = HEIGHT / chroma.length;
+                const barHeight = HEIGHT / hpcp.length;
 
                 canvasCtx.drawImage(canvasElement, -SPEED, 0);
-                chroma.forEach(function (value, i) {
+                hpcp.forEach(function (value, i) {
                     canvasCtx.fillStyle = float2color(value);
                     let curHeight = HEIGHT - ((i + 1) * barHeight);
                     canvasCtx.fillRect(WIDTH - SPEED, curHeight, SPEED, barHeight);
                 });
+
+                canvasCtx.fillStyle = "#AAAAAA";
+                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT / 2 - 1, SPEED + 1, 3);
+
+                canvasCtx.fillStyle = "#00FFFF";
+                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (cx.offset() * HEIGHT) - 1, SPEED + 1, 3);
+                canvasCtx.fillStyle = "#FFFF00";
+                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (cx.offset_mean() * HEIGHT) - 1, SPEED + 1, 3);
 
 
             };

@@ -41,8 +41,8 @@ class Context {
                 this.ptr = 0;
                 wasm.__wbg_context_free(ptr);
             }
-        static new() {
-    return Context.__construct(wasm.context_new());
+        static new(arg0) {
+    return Context.__construct(wasm.context_new(arg0));
 }
 process_audio(arg0) {
     const [ptr0, len0] = passArrayF32ToWasm(arg0);
@@ -52,11 +52,20 @@ process_audio(arg0) {
         wasm.__wbindgen_free(ptr0, len0 * 4);
     }
 }
-result_ptr() {
-    return wasm.context_result_ptr(this.ptr);
+hpcp_ptr() {
+    return wasm.context_hpcp_ptr(this.ptr);
 }
-result_len() {
-    return wasm.context_result_len(this.ptr);
+fft_window() {
+    return wasm.context_fft_window(this.ptr);
+}
+offset() {
+    return wasm.context_offset(this.ptr);
+}
+reset_offset() {
+    return wasm.context_reset_offset(this.ptr);
+}
+offset_mean() {
+    return wasm.context_offset_mean(this.ptr);
 }
 }
 __exports.Context = Context;

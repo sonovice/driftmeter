@@ -2,12 +2,12 @@
 
 extern crate wasm_bindgen;
 extern crate chfft;
-#[macro_use]
 extern crate ndarray;
 
+use std::collections::VecDeque;
+
 use chfft::RFft1D;
-use ndarray::prelude::*;
-use ndarray::Array2;
+use ndarray::{prelude::*, Array2};
 use wasm_bindgen::prelude::*;
 
 mod filterbank;
@@ -15,17 +15,20 @@ mod filterbank;
 #[wasm_bindgen]
 pub struct Context {
     fft: RFft1D<f32>,
-    filter: Array2<f32>,
-    result: [f32; 12],
+    filterbank: Array2<f32>,
+    hpcp: [f32; 12],
+    offset_buffer: VecDeque<f32>,
 }
 
 #[wasm_bindgen]
 impl Context {
-    pub fn new() -> Context {
+    pub fn new(offset_buffer_size: usize) -> Context {
+        let filterbank_length = filterbank::FILTER_MATRIX.len();
         Context {
-            fft: RFft1D::<f32>::new(2048),
-            filter: Array::from_shape_vec((36, 1025), filterbank::FILTER_MATRIX.to_vec()).unwrap(),
-            result: [0.0; 12],
+            fft: RFft1D::<f32>::new((filterbank_length / 36 - 1) * 2),
+            filterbank: Array::from_shape_vec((36, filterbank_length / 36), filterbank::FILTER_MATRIX.to_vec()).unwrap(),
+            hpcp: [0.0; 12],
+            offset_buffer: VecDeque::with_capacity(offset_buffer_size),
         }
     }
 
@@ -38,17 +41,15 @@ impl Context {
         let bins = Array::from_vec(bins);
 
         // Load filter matrix as ndarray
-        let chroma = self.filter.dot(&bins);
+        let mut chroma = self.filterbank.dot(&bins);
 
         // Normalize
         let chroma_length = f32::sqrt(chroma.mapv(|x| x.powi(2)).scalar_sum());
-        let chroma = chroma / chroma_length;
+        chroma /= chroma_length;
 
-        // Reorder
-        let chroma = stack![Axis(0), chroma.slice(s![5..]), chroma.slice(s![..5])];
 
         // Calculate HPCPs
-        let reshaped_chroma = Array::from_shape_vec((12, 3), chroma.to_vec()).unwrap();
+        let reshaped_chroma = chroma.into_shape((12, 3)).unwrap();
         let energy = reshaped_chroma.sum_axis(Axis(0)).to_vec();
 
         let (b_index, b) = argmax(&energy);
@@ -62,16 +63,35 @@ impl Context {
         let p = 0.5 * (a - c) / (a - (2. * b) + c);
 
         for i in 0..12 {
-            self.result[i] = reshaped_chroma[[i, b_index]] - (0.25 * (reshaped_chroma[[i, a_index]] - reshaped_chroma[[i, c_index]]) * p);
+            self.hpcp[i] = reshaped_chroma[[i, b_index]] - (0.25 * (reshaped_chroma[[i, a_index]] - reshaped_chroma[[i, c_index]]) * p);
         }
+
+        let offset = (b_index as f32 + 1.0) * 0.25 + (p / 2.0);
+
+        if self.offset_buffer.len() == 12 {
+            self.offset_buffer.pop_front();
+        }
+        self.offset_buffer.push_back(offset);
     }
 
-    pub fn result_ptr(&self) -> *const f32 {
-        self.result.as_ptr()
+    pub fn hpcp_ptr(&self) -> *const f32 {
+        self.hpcp.as_ptr()
     }
 
-    pub fn result_len(&self) -> usize {
-        self.result.len()
+    pub fn fft_window(&self) -> usize {
+        (filterbank::FILTER_MATRIX.len() / 36 - 1) * 2
+    }
+
+    pub fn offset(&self) -> f32 {
+        *self.offset_buffer.back().unwrap()
+    }
+
+    pub fn reset_offset(&mut self) {
+        self.offset_buffer.clear();
+    }
+
+    pub fn offset_mean(&self) -> f32 {
+        self.offset_buffer.iter().sum::<f32>() as f32 / self.offset_buffer.len() as f32
     }
 }
 
