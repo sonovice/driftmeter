@@ -67,6 +67,9 @@ reset_offset() {
 offset_mean() {
     return wasm.driftmeter_offset_mean(this.ptr);
 }
+offset_median() {
+    return wasm.driftmeter_offset_median(this.ptr);
+}
 }
 __exports.DriftMeter = DriftMeter;
 

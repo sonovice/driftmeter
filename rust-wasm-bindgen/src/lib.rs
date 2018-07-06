@@ -93,9 +93,19 @@ impl DriftMeter {
     pub fn offset_mean(&self) -> f32 {
         self.offset_buffer.iter().sum::<f32>() as f32 / self.offset_buffer.len() as f32
     }
+
+    pub fn offset_median(&self) -> f32 {
+        // Unfortunately, sort() is not defined for f32, so we have to do it (kind of) manually
+        let mut offset_buffer_vec: Vec<f32> = self.offset_buffer.iter().map(|x| *x).collect();
+        offset_buffer_vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let mid = offset_buffer_vec.len() / 2;
+        if offset_buffer_vec.len() % 2 == 0 {}
+        offset_buffer_vec[mid]
+    }
 }
 
-pub fn argmax<T>(u: &[T]) -> (usize, T)
+
+fn argmax<T>(u: &[T]) -> (usize, T)
     where T: Copy + PartialOrd
 {
     assert_ne!(u.len(), 0);
