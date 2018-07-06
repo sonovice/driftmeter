@@ -15,6 +15,4 @@ static  new(arg0: number): DriftMeter;
 
  offset_mean(): number;
 
- offset_median(): number;
-
 }
