@@ -14,12 +14,22 @@
 <script src="drift_meter.js"></script>
 <script src="colormap.js"></script>
 <script>
+    Math.median = function (arr) {
+        arr = arr.slice(0); // create copy
+        let middle = (arr.length + 1) / 2,
+            sorted = arr.sort(function (a, b) {
+                return a - b;
+            });
+        return (sorted.length % 2) ? sorted[middle - 1] : (sorted[middle - 1.5] + sorted[middle - 0.5]) / 2;
+    };
+
     const {DriftMeter} = wasm_bindgen;
-    const OFFSET_QUEUE_LENGTH = 25;
+    const OFFSET_QUEUE_LENGTH = Math.floor(48000 / 2048 * 10); // 10 secs buffer length
+    let offsetBuffer = Array(OFFSET_QUEUE_LENGTH).fill(0);
 
     let driftMeter = null;
     wasm_bindgen('./drift_meter_bg.wasm').then(function () {
-        driftMeter = DriftMeter.new(OFFSET_QUEUE_LENGTH);
+        driftMeter = DriftMeter.new();
     });
 
     function start() {
@@ -28,6 +38,9 @@
 
         let canvasElement = document.getElementsByTagName("canvas")[0];
         let canvasCtx = canvasElement.getContext("2d");
+        canvasCtx.font = "15px Arial";
+
+        const tuning_text = document.getElementById("tuning");
 
         const HEIGHT = canvasElement.height;
         const WIDTH = canvasElement.width;
@@ -47,10 +60,13 @@
             scriptNode.onaudioprocess = function (audioProcessingEvent) {
                 const inputBuffer = audioProcessingEvent.inputBuffer;
 
-                driftMeter.process_audio(inputBuffer.getChannelData(0));
+                const offset = driftMeter.calc_offset(inputBuffer.getChannelData(0));
                 const ptr = driftMeter.hpcp_ptr() / Float32Array.BYTES_PER_ELEMENT;
                 const hpcp = new Float32Array(wasm_bindgen.wasm.memory.buffer)
                     .subarray(ptr, ptr + 12);
+
+                offsetBuffer.shift(1);
+                offsetBuffer.push(offset);
 
                 const barHeight = HEIGHT / hpcp.length;
 
@@ -64,14 +80,15 @@
                 canvasCtx.fillStyle = "#AAAAAA";
                 canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT / 2 - 1, SPEED + 1, 3);
 
-                // canvasCtx.fillStyle = "#00FF00";
-                // canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (driftMeter.offset_median() * HEIGHT) - 1, SPEED + 1, 3);
+                canvasCtx.fillStyle = "#00FF00";
+                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - ((Math.median(offsetBuffer) + 0.5) * HEIGHT) - 1, SPEED + 1, 3);
                 canvasCtx.fillStyle = "#00FFFF";
-                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (driftMeter.offset() * HEIGHT) - 1, SPEED + 1, 3);
-                canvasCtx.fillStyle = "#FFFF00";
-                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - (driftMeter.offset_mean() * HEIGHT) - 1, SPEED + 1, 3);
+                canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - ((offset + 0.5) * HEIGHT) - 1, SPEED + 1, 3);
+                // canvasCtx.fillStyle = "#FFFF00";
+                // canvasCtx.fillRect(WIDTH - SPEED - 1, HEIGHT - ((Math.mean(offsetBuffer) + 0.5) * HEIGHT) - 1, SPEED + 1, 3);
 
-
+                const cent = 440 * Math.pow(2, Math.median(offsetBuffer) / 12);
+                tuning_text.innerText = (Math.round(cent * 10) / 10).toFixed(1);
             };
             audioSource.connect(scriptNode);
             scriptNode.connect(audioCtx.destination);
@@ -82,7 +99,7 @@
     }
 
 </script>
-
+<div>Estimated tuning frequency: A = <span id="tuning">?</span> Hz</div>
 <canvas width="600" height="400"></canvas>
 <br>
 <button id="start" onclick="start()">Start</button>

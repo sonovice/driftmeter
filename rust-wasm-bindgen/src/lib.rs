@@ -4,8 +4,6 @@ extern crate wasm_bindgen;
 extern crate chfft;
 extern crate ndarray;
 
-use std::collections::VecDeque;
-
 use chfft::RFft1D;
 use ndarray::{prelude::*, Array2};
 use wasm_bindgen::prelude::*;
@@ -17,22 +15,20 @@ pub struct DriftMeter {
     fft: RFft1D<f32>,
     filterbank: Array2<f32>,
     hpcp: [f32; 12],
-    offset_buffer: VecDeque<f32>,
 }
 
 #[wasm_bindgen]
 impl DriftMeter {
-    pub fn new(offset_buffer_size: usize) -> DriftMeter {
+    pub fn new() -> DriftMeter {
         let filterbank_length = filterbank::FILTER_MATRIX.len();
         DriftMeter {
             fft: RFft1D::<f32>::new((filterbank_length / 36 - 1) * 2),
             filterbank: Array::from_shape_vec((36, filterbank_length / 36), filterbank::FILTER_MATRIX.to_vec()).unwrap(),
             hpcp: [0.0; 12],
-            offset_buffer: VecDeque::with_capacity(offset_buffer_size),
         }
     }
 
-    pub fn process_audio(&mut self, buf: &[f32]) {
+    pub fn calc_offset(&mut self, buf: &[f32]) -> f32 {
         // Do FFT
         let bins = self.fft.forward(&buf);
 
@@ -66,12 +62,9 @@ impl DriftMeter {
             self.hpcp[i] = reshaped_chroma[[i, b_index]] - (0.25 * (reshaped_chroma[[i, a_index]] - reshaped_chroma[[i, c_index]]) * p);
         }
 
-        let offset = (b_index as f32 + 1.0) * 0.25 + (p / 2.0);
+        let offset = ((b_index as f32 + 1.0) * 0.25 + (p / 2.0)) - 0.5;
 
-        if self.offset_buffer.len() == self.offset_buffer.capacity() {
-            self.offset_buffer.pop_front();
-        }
-        self.offset_buffer.push_back(offset);
+        offset
     }
 
     pub fn hpcp_ptr(&self) -> *const f32 {
@@ -81,26 +74,6 @@ impl DriftMeter {
     pub fn fft_window(&self) -> usize {
         (filterbank::FILTER_MATRIX.len() / 36 - 1) * 2
     }
-
-    pub fn offset(&self) -> f32 {
-        *self.offset_buffer.back().unwrap()
-    }
-
-    pub fn reset_offset(&mut self) {
-        self.offset_buffer.clear();
-    }
-
-    pub fn offset_mean(&self) -> f32 {
-        self.offset_buffer.iter().sum::<f32>() as f32 / self.offset_buffer.len() as f32
-    }
-
-//    pub fn offset_median(&self) -> f32 {
-//        // Unfortunately, sort() is not defined for f32, so we have to do it (kind of) manually
-//        let mut offset_buffer_vec: Vec<f32> = self.offset_buffer.iter().map(|x| *x).collect();
-//        offset_buffer_vec.sort_by(|a, b| a.partial_cmp(b).unwrap());
-//        let mid = offset_buffer_vec.len() / 2;
-//        offset_buffer_vec[mid]
-//    }
 }
 
 fn argmax<T>(u: &[T]) -> (usize, T)

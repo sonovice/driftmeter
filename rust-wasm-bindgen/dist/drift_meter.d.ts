@@ -1,18 +1,12 @@
 /* tslint:disable */
 export class DriftMeter {
 free(): void;
-static  new(arg0: number): DriftMeter;
+static  new(): DriftMeter;
 
- process_audio(arg0: Float32Array): void;
+ calc_offset(arg0: Float32Array): number;
 
  hpcp_ptr(): number;
 
  fft_window(): number;
-
- offset(): number;
-
- reset_offset(): void;
-
- offset_mean(): number;
 
 }

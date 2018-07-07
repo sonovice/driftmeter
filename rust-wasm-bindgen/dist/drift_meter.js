@@ -41,13 +41,13 @@ class DriftMeter {
                 this.ptr = 0;
                 wasm.__wbg_driftmeter_free(ptr);
             }
-        static new(arg0) {
-    return DriftMeter.__construct(wasm.driftmeter_new(arg0));
+        static new() {
+    return DriftMeter.__construct(wasm.driftmeter_new());
 }
-process_audio(arg0) {
+calc_offset(arg0) {
     const [ptr0, len0] = passArrayF32ToWasm(arg0);
     try {
-        return wasm.driftmeter_process_audio(this.ptr, ptr0, len0);
+        return wasm.driftmeter_calc_offset(this.ptr, ptr0, len0);
     } finally {
         wasm.__wbindgen_free(ptr0, len0 * 4);
     }
@@ -57,15 +57,6 @@ hpcp_ptr() {
 }
 fft_window() {
     return wasm.driftmeter_fft_window(this.ptr);
-}
-offset() {
-    return wasm.driftmeter_offset(this.ptr);
-}
-reset_offset() {
-    return wasm.driftmeter_reset_offset(this.ptr);
-}
-offset_mean() {
-    return wasm.driftmeter_offset_mean(this.ptr);
 }
 }
 __exports.DriftMeter = DriftMeter;
