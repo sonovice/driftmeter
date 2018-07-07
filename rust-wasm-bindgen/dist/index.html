@@ -13,6 +13,10 @@
     }
 </style>
 <body>
+
+<canvas onclick="start()" width="485" height="300"></canvas>
+<div>Estimated tuning frequency: A = <span id="tuning">?</span> Hz</div>
+
 <script src="drift_meter.js"></script>
 <script src="colormap.js"></script>
 <script>
@@ -25,9 +29,26 @@
         return (sorted.length % 2) ? sorted[middle - 1] : (sorted[middle - 1.5] + sorted[middle - 0.5]) / 2;
     };
 
+    let isStarted = false;
+
     const {DriftMeter} = wasm_bindgen;
     const OFFSET_QUEUE_LENGTH = Math.floor(48000 / 2048 * 10); // 10 secs buffer length
     let offsetBuffer = Array(OFFSET_QUEUE_LENGTH).fill(0);
+
+    let canvasElement = document.getElementsByTagName("canvas")[0];
+    let canvasCtx = canvasElement.getContext("2d");
+
+    const HEIGHT = canvasElement.height;
+    const WIDTH = canvasElement.width;
+
+    const tuning_text = document.getElementById("tuning");
+
+    canvasCtx.fillStyle = "#000000";
+    canvasCtx.font = "20px Arial";
+    canvasCtx.textAlign = 'center';
+    canvasCtx.fillText("Tap here to start!", WIDTH / 2, HEIGHT / 2);
+
+    const SPEED = 2;
 
     let driftMeter = null;
     wasm_bindgen('./drift_meter_bg.wasm').then(function () {
@@ -35,19 +56,11 @@
     });
 
     function start() {
-        let button = document.getElementById("start");
-        button.disabled = true;
-
-        let canvasElement = document.getElementsByTagName("canvas")[0];
-        let canvasCtx = canvasElement.getContext("2d");
-        canvasCtx.font = "15px Arial";
-
-        const tuning_text = document.getElementById("tuning");
-
-        const HEIGHT = canvasElement.height;
-        const WIDTH = canvasElement.width;
-
-        const SPEED = 2;
+        if (isStarted) {
+            return;
+        }
+        isStarted = true;
+        canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
         let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         navigator.mediaDevices.getUserMedia({
@@ -101,10 +114,5 @@
     }
 
 </script>
-<div>Estimated tuning frequency: A = <span id="tuning">?</span> Hz</div>
-<canvas width="485" height="300"></canvas>
-<br>
-<button id="start" onclick="start()">Start</button>
-
 </body>
 </html>
