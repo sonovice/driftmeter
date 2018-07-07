@@ -70,12 +70,15 @@
 
 
     const {DriftMeter} = wasm_bindgen;
-    const OFFSET_QUEUE_LENGTH = Math.floor(48000 / 2048 * 10); // 10 secs buffer length
-    let offsetBuffer = Array(OFFSET_QUEUE_LENGTH).fill(0);
+    const OFFSET_QUEUE_LENGTH = Math.floor(48000 / 4096 * 10); // 5 secs buffer length
+    let offsetBuffer = Array(OFFSET_QUEUE_LENGTH);
+    for (let i = 0; i < OFFSET_QUEUE_LENGTH; i++) {
+        offsetBuffer[i] = Math.random() - 0.5;
+    }
 
     let driftMeter = null;
     wasm_bindgen('./drift_meter_bg.wasm').then(function () {
-        driftMeter = DriftMeter.new(OFFSET_QUEUE_LENGTH);
+        driftMeter = DriftMeter.new();
     });
 
     function start() {
@@ -88,7 +91,7 @@
         navigator.mediaDevices.getUserMedia({
             audio: {
                 echoCancellation: false,
-                noiseSuppression: false,
+                noiseSuppression: true,
                 autoGainControl: false,
             }
         }).then(function (stream) {

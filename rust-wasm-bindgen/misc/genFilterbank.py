@@ -2,7 +2,7 @@ import librosa.filters
 import numpy as np
 
 SAMPLE_RATE = 48000
-N_BINS = 2048
+N_BINS = 4096
 
 filterbank = librosa.filters.chroma(SAMPLE_RATE, N_BINS, n_chroma=36)  # , octwidth=None)
 filterbank = np.roll(filterbank, -5, 0)  # Necessary due to a bug in librosa

@@ -32,8 +32,11 @@
     let isStarted = false;
 
     const {DriftMeter} = wasm_bindgen;
-    const OFFSET_QUEUE_LENGTH = Math.floor(48000 / 2048 * 10); // 10 secs buffer length
-    let offsetBuffer = Array(OFFSET_QUEUE_LENGTH).fill(0);
+    const OFFSET_QUEUE_LENGTH = Math.floor(48000 / 4096 * 10); // 10 secs buffer length
+    let offsetBuffer = Array(OFFSET_QUEUE_LENGTH);
+    for (let i = 0; i < OFFSET_QUEUE_LENGTH; i++) {
+        offsetBuffer[i] = Math.random() - 0.5;
+    }
 
     let canvasElement = document.getElementsByTagName("canvas")[0];
     let canvasCtx = canvasElement.getContext("2d");
@@ -66,7 +69,7 @@
         navigator.mediaDevices.getUserMedia({
             audio: {
                 echoCancellation: false,
-                noiseSuppression: false,
+                noiseSuppression: true,
                 autoGainControl: false,
             }
         }).then(function (stream) {
