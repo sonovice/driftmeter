@@ -110,6 +110,7 @@
 
         }).catch(function (err) {
             console.log('Error initializing user media stream: ' + err);
+            isStarted = false;
         });
     }
 
